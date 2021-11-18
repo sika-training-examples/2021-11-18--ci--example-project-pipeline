@@ -62,6 +62,23 @@ deploy dev:
     url: https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
     kubernetes:
       namespace: default
+    on_stop: stop dev
+
+stop dev:
+  stage: deploy dev
+  when: manual
+  variables:
+    GIT_STRATEGY: none
+  except:
+    variables:
+      - $SKIP_STAGE_deploy_dev == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
+  script:
+    - helm uninstall proj-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
+  environment:
+    name: dev/$CI_COMMIT_REF_SLUG
+    kubernetes:
+      namespace: default
+    action: stop
 
 test dev:
   stage: test dev
