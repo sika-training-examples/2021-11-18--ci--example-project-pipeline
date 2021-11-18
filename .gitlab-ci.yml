@@ -1,10 +1,20 @@
 image: sikalabs/ci
 
 stages:
+  - lint
   - build
 
 variables:
   IMAGE: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA-$CI_PIPELINE_ID
+  GIT_CLEAN_FLAGS: -ffdx -e .yarn-cache
+
+lint:
+  stage: lint
+  image: node:16
+  script:
+    - yarn --cache-folder .yarn-cache install
+    - yarn lint
+
 
 build:
   stage: build
