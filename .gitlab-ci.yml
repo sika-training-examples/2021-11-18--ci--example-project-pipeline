@@ -4,6 +4,7 @@ stages:
   - lint
   - build
   - deploy dev
+  - test dev
 
 variables:
   IMAGE: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA-$CI_PIPELINE_ID
@@ -61,3 +62,16 @@ deploy dev:
     url: https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
     kubernetes:
       namespace: default
+
+test dev:
+  stage: test dev
+  except:
+    variables:
+      - $SKIP_STAGE_test_dev == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
+  script:
+    # - slu wait-for-ssl https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
+    - sleep 20
+    - curl https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
+  environment:
+    name: dev/$CI_COMMIT_REF_SLUG
+    action: prepare
