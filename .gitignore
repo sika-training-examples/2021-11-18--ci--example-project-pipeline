@@ -4,6 +4,9 @@
 # Editor
 .vscode
 
+# Global
+*.log
+
 # JS
 node_modules
 .yarn-cache
