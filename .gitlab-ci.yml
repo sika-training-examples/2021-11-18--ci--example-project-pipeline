@@ -39,6 +39,8 @@ deploy dev:
     - helm repo add sikalabs https://helm.oxs.cz
     - helm upgrade --install proj-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
       sikalabs/one-image
+      --wait
+      --timeout 60s
       --set image=$IMAGE
       --set host=$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
   environment:
