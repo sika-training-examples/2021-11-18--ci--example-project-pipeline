@@ -7,6 +7,7 @@ stages:
 
 variables:
   IMAGE: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA-$CI_PIPELINE_ID
+  IMAGE_BRANCH: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_REF_SLUG
   GIT_CLEAN_FLAGS: -ffdx -e .yarn-cache
 
 lint:
@@ -27,7 +28,19 @@ build:
       - $SKIP_STAGE_build == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
   script:
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
-    - docker build -t $IMAGE .
+    - docker build -t $IMAGE -t $IMAGE_BRANCH .
+    - docker push $IMAGE
+    - docker push $IMAGE_BRANCH
+
+build tag only:
+  stage: build
+  only:
+    variables:
+      - $SKIP_STAGE_build == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
+  script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker pull $IMAGE_BRANCH
+    - docker tag $IMAGE_BRANCH $IMAGE
     - docker push $IMAGE
 
 deploy dev:
