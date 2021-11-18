@@ -12,6 +12,9 @@ variables:
 lint:
   stage: lint
   image: node:16
+  except:
+    variables:
+      - $SKIP_STAGE_lint == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
   script:
     - yarn --cache-folder .yarn-cache install
     - yarn lint
@@ -19,6 +22,9 @@ lint:
 
 build:
   stage: build
+  except:
+    variables:
+      - $SKIP_STAGE_build == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
   script:
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
     - docker build -t $IMAGE .
@@ -26,6 +32,9 @@ build:
 
 deploy dev:
   stage: deploy dev
+  except:
+    variables:
+      - $SKIP_STAGE_deploy_dev == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
   script:
     - helm repo add sikalabs https://helm.oxs.cz
     - helm upgrade --install proj-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
