@@ -5,11 +5,24 @@ stages:
   - build
   - deploy dev
   - test dev
+  - deploy prod
 
 variables:
   IMAGE: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA-$CI_PIPELINE_ID
   IMAGE_BRANCH: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_REF_SLUG
   GIT_CLEAN_FLAGS: -ffdx -e .yarn-cache
+
+
+.deploy: &deploy
+  script:
+    - helm repo add sikalabs https://helm.oxs.cz
+    - helm upgrade --install $HELM_RELEASE
+      sikalabs/one-image
+      --wait
+      --timeout 60s
+      --set image=$IMAGE
+      --set host=$HOST
+
 
 lint:
   stage: lint
@@ -45,18 +58,14 @@ build tag only:
     - docker push $IMAGE
 
 deploy dev:
+  <<: *deploy
   stage: deploy dev
+  variables:
+    HELM_RELEASE: proj-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
+    HOST: $CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
   except:
     variables:
       - $SKIP_STAGE_deploy_dev == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
-  script:
-    - helm repo add sikalabs https://helm.oxs.cz
-    - helm upgrade --install proj-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
-      sikalabs/one-image
-      --wait
-      --timeout 60s
-      --set image=$IMAGE
-      --set host=$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
     url: https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$KUBE_INGRESS_BASE_DOMAIN
@@ -92,3 +101,23 @@ test dev:
   environment:
     name: dev/$CI_COMMIT_REF_SLUG
     action: prepare
+
+deploy prod:
+  <<: *deploy
+  stage: deploy prod
+  only:
+    - master
+    - master-ci
+  when: manual
+  allow_failure: false
+  variables:
+    HELM_RELEASE: proj-$CI_PROJECT_ID
+    HOST: $CI_PROJECT_PATH_SLUG.$KUBE_INGRESS_BASE_DOMAIN
+  except:
+    variables:
+      - $SKIP_STAGE_deploy_prod == "1" && $SKIP_BRANCH == $CI_COMMIT_REF_NAME
+  environment:
+    name: prod
+    url: https://$CI_PROJECT_PATH_SLUG.$KUBE_INGRESS_BASE_DOMAIN
+    kubernetes:
+      namespace: default
